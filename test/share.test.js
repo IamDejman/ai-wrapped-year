@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { inflateSync, crc32 } from 'node:zlib';
-import { PERSONAS, readCode, readShort, newShort, CARD, cardSvg, advances, page } from '../share/card.js';
+import { PERSONAS, readCode, readShort, readRun, newShort, CARD, cardSvg, advances, page } from '../share/card.js';
 import { shortCode } from '../src/compare.js';
 import { png } from '../share/png.js';
 
@@ -121,4 +121,10 @@ test('the PNG holds the pixels it was given', () => {
   assert.deepEqual(Object.keys(chunks), ['IHDR', 'IDAT', 'IEND']);
   assert.deepEqual([...chunks.IHDR], [0, 0, 0, 3, 0, 0, 0, 2, 8, 6, 0, 0, 0]);
   assert.deepEqual([...inflateSync(chunks.IDAT)], [0, ...rgba.subarray(0, 12), 0, ...rgba.subarray(12)]);
+});
+
+test('a run is counted by its version alone, and anything else is refused', () => {
+  assert.deepEqual(readRun('{"version":"0.4.2","first":true}'), { version: '0.4.2', first: 1 });
+  assert.deepEqual(readRun('{"version":"0.4.2","first":"yes","id":"me"}'), { version: '0.4.2', first: 0 });
+  for (const bad of ['', 'null', '{}', '{"version":4}', '{"version":"0.4.2-beta"}', '{"version":"1.2.3; DROP TABLE runs"}']) assert.equal(readRun(bad), null, bad);
 });

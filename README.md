@@ -130,10 +130,13 @@ A code stands for the year, your persona and five totals: prompts, tokens, hours
 | `--json` | Print the numbers as JSON |
 | `--data <file>` | Render from a saved `--json` file |
 | `--no-open` | Don't open the browser |
+| `--no-count` | Don't add this run to the anonymous count |
 
 ## Privacy
 
 Everything is computed on your machine. The page is a single file with your numbers inside it. It reaches the network only when you copy your friend code or share your card: it sends the year, your persona and the five totals to the share server, which keeps them and sends back the code or the card link. Comparing with a friend's code asks the share server for their totals.
+
+Each run adds one to an anonymous count, so the project can tell how many people use it. It sends the version and whether this is the machine's first counted run, and the share server keeps one number per day and version: no id, IP address, time or totals. Turn it off with `--no-count` or `DO_NOT_TRACK=1`. It is off on build machines (`CI`) and when rendering with `--data`.
 
 Three options reach the network, and only when you pass them:
 

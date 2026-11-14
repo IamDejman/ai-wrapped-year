@@ -33,6 +33,17 @@ export function readShort(text, size = CODE) {
   const id = String(text).toLowerCase().replace(/o/g, '0').replace(/[il]/g, '1');
   return new RegExp(`^[0-9a-hjkmnp-tv-z]{${size}}$`).test(id) ? id : null;
 }
+/** A run to count: the version that ran, and 1 if it was that machine's first. Null for anything else. */
+export function readRun(text) {
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  return typeof body?.version === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(body.version) ? { version: body.version, first: body.first === true ? 1 : 0 } : null;
+}
+
 export const newShort = (size = CODE) => Array.from(crypto.getRandomValues(new Uint8Array(size)), (b) => LETTERS[b & 31]).join('');
 
 // The wrap's number formats.

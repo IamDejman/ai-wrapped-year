@@ -40,10 +40,12 @@ Usage: npx ai-wrapped-year [options]
   --json               Print the numbers as JSON and exit
   --data <file>        Render from a saved --json file instead of reading logs
   --no-open            Don't open the browser
+  --no-count           Don't add this run to the anonymous count (or set DO_NOT_TRACK=1)
   -h, --help           Show this help
 
 Reads ${readers.slice(0, -1).join(', ')} and ${readers.at(-1)}.
-Nothing leaves this machine unless you pass --github or --compare.`;
+Each run adds one to an anonymous count: the version and nothing about you.
+Nothing else leaves this machine unless you pass --github or --compare.`;
 
 const fail = (message, code = 1) => {
   console.error(message);
@@ -70,6 +72,7 @@ try {
       json: { type: 'boolean' },
       data: { type: 'string' },
       'no-open': { type: 'boolean' },
+      'no-count': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
   }).values;
@@ -164,6 +167,7 @@ async function readLogs() {
 }
 
 let data;
+let counted;
 if (args.data) {
   try {
     data = JSON.parse(fs.readFileSync(args.data, 'utf8'));
@@ -172,6 +176,10 @@ if (args.data) {
   }
 } else {
   data = await readLogs();
+  const { counting, countRun } = await import('../src/count.js');
+  if (!args['no-count'] && counting()) {
+    counted = countRun(JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
+  }
 }
 
 if (friends) data.friends = friends;
@@ -200,6 +208,7 @@ if (args.compare) {
 
 if (args.json) {
   console.log(JSON.stringify(data, null, 2));
+  await counted;
   process.exit(0);
 }
 
