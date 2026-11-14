@@ -40,11 +40,11 @@ Usage: npx ai-wrapped-year [options]
   --json               Print the numbers as JSON and exit
   --data <file>        Render from a saved --json file instead of reading logs
   --no-open            Don't open the browser
-  --no-count           Don't add this run to the anonymous count (or set DO_NOT_TRACK=1)
+  --no-count           Don't count this run (or set DO_NOT_TRACK=1)
   -h, --help           Show this help
 
 Reads ${readers.slice(0, -1).join(', ')} and ${readers.at(-1)}.
-Each run adds one to an anonymous count: the version and nothing about you.
+Each run is counted: it sends the version and a random id, nothing else about you.
 Nothing else leaves this machine unless you pass --github or --compare.`;
 
 const fail = (message, code = 1) => {

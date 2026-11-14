@@ -123,8 +123,8 @@ test('the PNG holds the pixels it was given', () => {
   assert.deepEqual([...inflateSync(chunks.IDAT)], [0, ...rgba.subarray(0, 12), 0, ...rgba.subarray(12)]);
 });
 
-test('a run is counted by its version alone, and anything else is refused', () => {
-  assert.deepEqual(readRun('{"version":"0.4.2","first":true}'), { version: '0.4.2', first: 1 });
-  assert.deepEqual(readRun('{"version":"0.4.2","first":"yes","id":"me"}'), { version: '0.4.2', first: 0 });
-  for (const bad of ['', 'null', '{}', '{"version":4}', '{"version":"0.4.2-beta"}', '{"version":"1.2.3; DROP TABLE runs"}']) assert.equal(readRun(bad), null, bad);
+test('a run is counted by its version and a random id, and anything else is refused', () => {
+  const id = '3f2b8c1e-5a4d-4e6f-9a0b-1c2d3e4f5a6b';
+  assert.deepEqual(readRun(JSON.stringify({ version: '0.4.2', id, name: 'me' })), { version: '0.4.2', id });
+  for (const bad of ['', 'null', '{}', '{"version":"0.4.2"}', JSON.stringify({ version: 4, id }), JSON.stringify({ version: '0.4.2-beta', id }), JSON.stringify({ version: '0.4.2', id: 'me@example.com' }), JSON.stringify({ version: '0.4.2', id: `${id}; DROP TABLE seen` })]) assert.equal(readRun(bad), null, bad);
 });

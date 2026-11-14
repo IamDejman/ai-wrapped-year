@@ -137,7 +137,7 @@ test('percentile server: too many requests from one address are turned away', as
   }
 });
 
-test('a run is counted once as a first, says so once, and never fails the wrap', async () => {
+test('a run is counted under one random id, says so once, and never fails the wrap', async () => {
   assert.equal(counting({}), true);
   for (const off of [{ DO_NOT_TRACK: '1' }, { CI: 'true' }, { AGENT_WRAPPED_NO_COUNT: '1' }]) assert.equal(counting(off), false);
   assert.equal(counting({ DO_NOT_TRACK: '0' }), true);
@@ -160,12 +160,13 @@ test('a run is counted once as a first, says so once, and never fails the wrap',
   } finally {
     server.close();
   }
-  assert.deepEqual(got, [['POST', '/v1/runs', { version: '0.4.2', first: true }], ['POST', '/v1/runs', { version: '0.4.2', first: false }]]);
+  const id = fs.readFileSync(at('count-home', 'count-id'), 'utf8');
+  assert.match(id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(got, [['POST', '/v1/runs', { version: '0.4.2', id }], ['POST', '/v1/runs', { version: '0.4.2', id }]]);
   assert.equal(said.length, 1);
   assert.match(said[0], /--no-count/);
 
-  // The server is gone now: the run still finishes, and the first is still owed.
-  const offline = { ...opts, home: at('count-offline') };
-  await countRun('0.4.2', offline);
-  assert.equal(fs.readFileSync(at('count-offline', 'counted'), 'utf8'), '');
+  // The server is gone now: the run still finishes.
+  await countRun('0.4.2', { ...opts, home: at('count-offline') });
+  assert.notEqual(fs.readFileSync(at('count-offline', 'count-id'), 'utf8'), id);
 });
