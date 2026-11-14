@@ -130,10 +130,13 @@ A code stands for the year, your persona and five totals: prompts, tokens, hours
 | `--json` | Print the numbers as JSON |
 | `--data <file>` | Render from a saved `--json` file |
 | `--no-open` | Don't open the browser |
+| `--no-count` | Don't count this run |
 
 ## Privacy
 
 Everything is computed on your machine. The page is a single file with your numbers inside it. It reaches the network only when you copy your friend code or share your card: it sends the year, your persona and the five totals to the share server, which keeps them and sends back the code or the card link. Comparing with a friend's code asks the share server for their totals.
+
+Each run is counted, so the project can tell how many people use it. It sends the version and a random id made only for this, kept in `~/.agent-wrapped/count-id`. The share server keeps the number of runs per day and version, and which ids ran each day: no IP address, time or totals, and the id is not the one `--compare` sends, so nothing ties it to your numbers. Turn it off with `--no-count` or `DO_NOT_TRACK=1`. It is off on build machines (`CI`) and when rendering with `--data`.
 
 Three options reach the network, and only when you pass them:
 
@@ -141,7 +144,7 @@ Three options reach the network, and only when you pass them:
 - `--compare` sends five totals (prompts, tokens, hours, streak, cost), the year and a random id to the percentile server you name. No names, projects, models or dates.
 - `--vs` with a friend code asks the share server for the totals behind it.
 
-A shared link carries no friend code: it shows your card and nothing else. The share server keeps the totals behind each code and card link and nothing more: no names, IP addresses or dates.
+A shared link carries no friend code: it shows your card and nothing else. Besides the run count, the share server keeps the totals behind each code and card link and nothing more: no names, IP addresses or dates.
 
 The site, aiyearwrapped.com, counts page views and copied commands with PostHog, without cookies. Friend codes are removed before anything is sent.
 

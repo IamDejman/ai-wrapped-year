@@ -8,6 +8,8 @@ export const home = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-wrapped-test-')
 process.env.HOME = home;
 process.env.USERPROFILE = home;
 for (const name of ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'GROK_HOME', 'XDG_DATA_HOME', 'XDG_CONFIG_HOME', 'APPDATA', 'AGENT_WRAPPED_API']) delete process.env[name];
+// Tests never add to the real run count.
+process.env.DO_NOT_TRACK = '1';
 process.env.AGENT_WRAPPED_HOME = path.join(home, '.agent-wrapped');
 process.on('exit', () => fs.rmSync(home, { recursive: true, force: true }));
 

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { inflateSync, crc32 } from 'node:zlib';
-import { PERSONAS, readCode, readShort, newShort, CARD, cardSvg, advances, page } from '../share/card.js';
+import { PERSONAS, readCode, readShort, readRun, newShort, CARD, cardSvg, advances, page } from '../share/card.js';
 import { shortCode } from '../src/compare.js';
 import { png } from '../share/png.js';
 
@@ -121,4 +121,10 @@ test('the PNG holds the pixels it was given', () => {
   assert.deepEqual(Object.keys(chunks), ['IHDR', 'IDAT', 'IEND']);
   assert.deepEqual([...chunks.IHDR], [0, 0, 0, 3, 0, 0, 0, 2, 8, 6, 0, 0, 0]);
   assert.deepEqual([...inflateSync(chunks.IDAT)], [0, ...rgba.subarray(0, 12), 0, ...rgba.subarray(12)]);
+});
+
+test('a run is counted by its version and a random id, and anything else is refused', () => {
+  const id = '3f2b8c1e-5a4d-4e6f-9a0b-1c2d3e4f5a6b';
+  assert.deepEqual(readRun(JSON.stringify({ version: '0.4.2', id, name: 'me' })), { version: '0.4.2', id });
+  for (const bad of ['', 'null', '{}', '{"version":"0.4.2"}', JSON.stringify({ version: 4, id }), JSON.stringify({ version: '0.4.2-beta', id }), JSON.stringify({ version: '0.4.2', id: 'me@example.com' }), JSON.stringify({ version: '0.4.2', id: `${id}; DROP TABLE seen` })]) assert.equal(readRun(bad), null, bad);
 });

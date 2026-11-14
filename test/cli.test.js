@@ -6,6 +6,8 @@ import test from 'node:test';
 import { compare, friendCodes, totals } from '../src/compare.js';
 import fs from 'node:fs';
 import { doctor } from '../src/doctor.js';
+import http from 'node:http';
+import { counting, countRun } from '../src/count.js';
 import { start } from '../server/percentiles.js';
 
 const BIN = fileURLToPath(new URL('../bin/agent-wrapped.js', import.meta.url));
@@ -133,4 +135,38 @@ test('percentile server: too many requests from one address are turned away', as
   } finally {
     await server.close();
   }
+});
+
+test('a run is counted under one random id, says so once, and never fails the wrap', async () => {
+  assert.equal(counting({}), true);
+  for (const off of [{ DO_NOT_TRACK: '1' }, { CI: 'true' }, { AGENT_WRAPPED_NO_COUNT: '1' }]) assert.equal(counting(off), false);
+  assert.equal(counting({ DO_NOT_TRACK: '0' }), true);
+
+  const got = [];
+  const server = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk) => (body += chunk)).on('end', () => {
+      got.push([req.method, req.url, JSON.parse(body)]);
+      res.writeHead(204).end();
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const said = [];
+  const opts = { url, home: at('count-home'), say: (text) => said.push(text) };
+  try {
+    await countRun('0.4.2', opts);
+    await countRun('0.4.2', opts);
+  } finally {
+    server.close();
+  }
+  const id = fs.readFileSync(at('count-home', 'count-id'), 'utf8');
+  assert.match(id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(got, [['POST', '/v1/runs', { version: '0.4.2', id }], ['POST', '/v1/runs', { version: '0.4.2', id }]]);
+  assert.equal(said.length, 1);
+  assert.match(said[0], /--no-count/);
+
+  // The server is gone now: the run still finishes.
+  await countRun('0.4.2', { ...opts, home: at('count-offline') });
+  assert.notEqual(fs.readFileSync(at('count-offline', 'count-id'), 'utf8'), id);
 });

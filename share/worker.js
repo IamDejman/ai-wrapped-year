@@ -2,6 +2,7 @@
 //   POST /v1/codes         an aw1- code in, the friend code for those totals out (the same one every time)
 //   GET  /v1/codes/<code>  the totals behind a friend code, for the wrap's Compare slide and --vs
 //   POST /v1/cards         an aw1- code in, the card link id for those totals out
+//   POST /v1/runs          a version and a random id in, one more run counted for today: no addresses or times kept
 //   /<card>                a page whose tags give apps the card as the link preview, then sends people to the site
 //   /<card>.png            the card, drawn once per link and kept in the cache
 // <card> is a card link id, never a friend code, or an aw1- code from links posted before card links.
@@ -11,7 +12,7 @@ import wasm from '@resvg/resvg-wasm/index_bg.wasm';
 import display from './fonts/BarlowCondensed-Black.ttf';
 import text from './fonts/Barlow-SemiBold.ttf';
 import bold from './fonts/Barlow-Bold.ttf';
-import { readCode, readShort, newShort, CODE, CARD, cardSvg, advances, page } from './card.js';
+import { readCode, readShort, readRun, newShort, CODE, CARD, cardSvg, advances, page } from './card.js';
 import { png } from './png.js';
 
 const HOME = 'https://aiyearwrapped.com/';
@@ -70,6 +71,18 @@ async function api(request, env, path) {
       if (!d) return json({ error: 'Send one aw1- code.' }, 400);
       const id = await shorten(env.DB, table, d.code);
       return id ? json({ [table.slice(0, -1)]: id }) : json({ error: 'No code is free. Try again.' }, 503);
+    }
+    if (path === '/v1/runs' && request.method === 'POST') {
+      const by = request.headers.get('cf-connecting-ip') ?? '';
+      if (!(await env.MAKING.limit({ key: `run:${by}` })).success) return json({ error: 'Too many runs from here.' }, 429);
+      const run = readRun(Number(request.headers.get('content-length')) > 200 ? '' : await request.text());
+      if (!run) return json({ error: 'Send a version and an id.' }, 400);
+      const day = new Date().toISOString().slice(0, 10);
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO runs (day, version, runs) VALUES (?, ?, 1) ON CONFLICT (day, version) DO UPDATE SET runs = runs + 1').bind(day, run.version),
+        env.DB.prepare('INSERT INTO seen (day, id) VALUES (?, ?) ON CONFLICT DO NOTHING').bind(day, run.id),
+      ]);
+      return new Response(null, { status: 204, headers: CORS });
     }
     const [, name] = path.match(/^\/v1\/codes\/([^/]+)$/) ?? [];
     if (name && request.method === 'GET') {
