@@ -194,6 +194,14 @@ npx wrangler dev
 
 To publish it, from the Cloudflare account that holds aiyearwrapped.com, run the same migrations with `--remote`, then `npx wrangler deploy`.
 
+## Usage stats
+
+```bash
+npm run stats
+```
+
+Prints runs, machines, npm downloads and site visits for each day since launch. Runs come from the share server's database through wrangler, so it needs the Cloudflare login above. "Not you" leaves out the machine it runs on. Site visits need `POSTHOG_API_KEY`, a PostHog personal API key with `query:read`. A source it can't reach is left out and says why.
+
 ## Adding a tool
 
 A reader is one file in `src/parsers` that lists a tool's files and turns each one into events (`prompt`, `reply`, `tool`). Add it to `src/sources.js`, add a fixture test in `test/readers.test.js`, and run:
